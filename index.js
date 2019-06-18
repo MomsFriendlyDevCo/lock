@@ -16,7 +16,7 @@ var lock = function(options) {
 
 	/**
 	* Set one or more settings
-	* @param {string|Object} key A single key to set or an object to merge
+	* @param {string|Object} key A single key to set or an object to merge, dotted notation supported
 	* @returns {Lock} This chainable instance
 	*/
 	this.set = (key, val) => {
@@ -73,7 +73,7 @@ var lock = function(options) {
 
 
 	/**
-	* Attempt to create a lock, throwing if the lock already exists
+	* Attempt to create a lock, returning a boolean for success
 	* @param {*} key The key to lock, hashed if necessary via hash()
 	* @param {Object} fields Additional fields to pass, can contain `{created, expiry}`
 	* @returns {Promise <boolean>} A promise which will resolve with true/false if the lock was created
