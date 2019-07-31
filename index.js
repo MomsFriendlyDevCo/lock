@@ -53,7 +53,7 @@ var lock = function(options) {
 			key: {type: mongoose.Schema.Types.String, index: {unique: true}},
 			expiry: {type: mongoose.Schema.Types.Date},
 			created: {type: mongoose.Schema.Types.Date},
-		}))
+		}, {strict: false}))
 		.then(()=> this.model = mongoose.model(this.settings.mongodb.collection, this.schema));
 
 
@@ -64,16 +64,18 @@ var lock = function(options) {
 	*/
 	this.get = key => Promise.resolve()
 		.then(()=> key = this.hash(key))
-		.then(()=> this.model.findOne({key}));
+		.then(()=> this.model.findOne({key}).lean())
+		.then(doc => _.omit(doc, this.settings.omitFields))
 
 
 	/**
 	* Request if a lock exists
-	* This function is really just a boolean wrapper for .get()
 	* @param {*} key The key to check, if a non-string this is run via hash() first
 	* @returns {Promise <boolean>} A promise which will resolve with a boolean indicating if the lock exists
 	*/
-	this.exists = key => this.get(key)
+	this.exists = key => Promise.resolve()
+		.then(()=> key = this.hash(key))
+		.then(()=> this.model.findOne({key}).select('_id').lean())
 		.then(doc => {
 			var exists = !!doc;
 			debug('Check key exists', key, '?', exists);
@@ -88,12 +90,13 @@ var lock = function(options) {
 	* @returns {Promise <boolean>} A promise which will resolve with true/false if the lock was created
 	*/
 	this.create = (key, fields) => Promise.resolve()
-		.then(()=> key = this.hash(key))
-		.then(()=> debug('Create lock with key', key))
-		.then(()=> this.model.create({
-			key,
+		.then(()=> this.hash(key))
+		.then(keyHash => { debug('Create lock with key', keyHash); return keyHash })
+		.then(keyHash => this.model.create({
+			key: keyHash,
 			created: new Date(),
 			expiry: new Date(Date.now()+this.settings.expiry),
+			...(this.settings.includeKeys && _.isObject(key) ? key : undefined),
 			...fields,
 		}))
 		.then(()=> {
@@ -104,6 +107,17 @@ var lock = function(options) {
 			debug('Error creating key', key, e);
 			return false;
 		});
+
+
+	/**
+	* Update the data behind an existing lock
+	* @param {*} key The key to lock, hashed if necessary via hash()
+	* @param {Object} fields Fields to update, can contain `{created, expiry}`
+	* @returns {Promise} A promise which will update with the updated lock
+	*/
+	this.update = (key, fields) => Promise.resolve()
+		.then(()=> key = this.hash(key))
+		.then(()=> this.model.updateOne({key}, fields));
 
 
 	/**
@@ -170,6 +184,8 @@ lock.defaults = {
 			useNewUrlParser: true,
 		},
 	},
+	omitFields: ['_id', '__v'],
+	includeKeys: true,
 };
 
 module.exports = lock;

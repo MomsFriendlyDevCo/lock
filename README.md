@@ -34,6 +34,8 @@ Default settings.
 | `mongodb.uri`        | `string` | `"mongodb://localhost/mfdc-cache"` | The MongoDB URI to connect to                   |
 | `mongodb.collection` | `string` | `"locks"`                          | The name of the collection to use               |
 | `mongodb.options`    | `object` | See code                           | Additional connection options to use            |
+| `omitFields`         | `array`  | `['_id', '__v']`                   | Which fields to autmatically skip when using `get()` |
+| `includeKeys`        | `boolean` | `true`                            | Also save the key field values, reduces overhead to disable this |
 
 
 lock.set(key, val)
@@ -57,6 +59,13 @@ lock.get(key)
 Return a `Promise <object>` of a lock and all its attached data.
 The result object will either be undefined (if it doesn't exist) or the lock with the original keys + additionalFields.
 Key is run via `lock.hash()` if it is not already a string.
+
+
+lock.update(key, fields)
+------------------------
+Save data back to an existing lock.
+Key is run via `lock.hash()` if it is not already a string.
+Returns a promise.
 
 
 lock.exists(key)

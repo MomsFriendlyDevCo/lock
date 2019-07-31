@@ -65,4 +65,17 @@ describe('@momsfriendlydevco/lock', ()=> {
 			.then(()=> mlog.log('Created', stats.created, 'locks with', stats.clashes, 'clashes'))
 	});
 
+	it('should store custom fields and update them', function() {
+		this.timeout(10 * 1000);
+		var key = {quz: 'Quz!', quark: 'Quark!'};
+		var data1 = {quomp: 'Qwomp!', qclark: 'Qlark!'};
+
+		return lock.create(key, data1)
+			.then(()=> lock.get(key))
+			.then(doc => expect(_.omit(doc, ['created', 'expiry', 'key'])).to.be.deep.equal({...key, ...data1}))
+			.then(()=> lock.update(key, {qclark: 'Qklark!'}))
+			.then(()=> lock.get(key))
+			.then(doc => expect(_.omit(doc, ['created', 'expiry', 'key'])).to.be.deep.equal({...key, ...data1, qclark: 'Qklark!'}))
+	});
+
 });
