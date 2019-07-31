@@ -58,13 +58,22 @@ var lock = function(options) {
 
 
 	/**
+	* Retrieve lock data
+	* @param {*} key The key to retrieve
+	* @returns {Promise <Object>} The lock data, this includes the original key and additional fields attached to it. If no lock is found this returns undefined
+	*/
+	this.get = key => Promise.resolve()
+		.then(()=> key = this.hash(key))
+		.then(()=> this.model.findOne({key}));
+
+
+	/**
 	* Request if a lock exists
+	* This function is really just a boolean wrapper for .get()
 	* @param {*} key The key to check, if a non-string this is run via hash() first
 	* @returns {Promise <boolean>} A promise which will resolve with a boolean indicating if the lock exists
 	*/
-	this.exists = key => Promise.resolve()
-		.then(()=> key = this.hash(key))
-		.then(()=> this.model.findOne({key}))
+	this.exists = key => this.get(key)
 		.then(doc => {
 			var exists = !!doc;
 			debug('Check key exists', key, '?', exists);

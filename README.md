@@ -49,19 +49,26 @@ Check all settings and connect to the database.
 lock.create(key, additionalFields)
 ----------------------------------
 Attempt to create a lock, returning a `Promise <boolean>` for success.
-Key is run via `lock.hash()` if it is not alreay a string.
+Key is run via `lock.hash()` if it is not already a string.
+
+
+lock.get(key)
+-------------
+Return a `Promise <object>` of a lock and all its attached data.
+The result object will either be undefined (if it doesn't exist) or the lock with the original keys + additionalFields.
+Key is run via `lock.hash()` if it is not already a string.
 
 
 lock.exists(key)
 ----------------
 Return a `Promise <boolean>` if a lock already exists.
-Key is run via `lock.hash()` if it is not alreay a string.
+Key is run via `lock.hash()` if it is not already a string.
 
 
 lock.release(key)
 -----------------
 Release a lock.
-Key is run via `lock.hash()` if it is not alreay a string.
+Key is run via `lock.hash()` if it is not already a string.
 
 
 lock.clean()
