@@ -9,7 +9,7 @@ var locker = new Lock();
 
 locker.init()
 	.then(()=> locker.create({Foo: 'Foo!', bar: 123})
-	.then(()=> locker.has({Foo: 'Foo!', bar: 123})) //= true
+	.then(()=> locker.exists({Foo: 'Foo!', bar: 123})) //= true
 	.then(()=> locker.release({Foo: 'Foo!', bar: 123}))
 ```
 
