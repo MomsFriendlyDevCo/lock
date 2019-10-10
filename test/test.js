@@ -84,11 +84,7 @@ describe('@momsfriendlydevco/lock', ()=> {
 		return lock.set('expiry', 100).create(key)
 			.then(()=> lock.exists(key))
 			.then(res => expect(res).to.be.true)
-			.then(() => {
-				return new Promise((resolve, reject) => {
-					setTimeout(resolve, 200);
-				});
-			})
+			.then(() => new Promise((resolve, reject) => setTimeout(resolve, 200)))
 			.then(()=> lock.exists(key))
 			.then(res => expect(res).to.be.false);;
 	});
