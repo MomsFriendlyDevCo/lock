@@ -75,7 +75,7 @@ var lock = function(options) {
 	*/
 	this.exists = key => Promise.resolve()
 		.then(()=> key = this.hash(key))
-		.then(()=> this.model.findOne({key, expiry: {$gt: new Date()}}).select('_id').lean())
+		.then(()=> this.model.findOne({key: {$eq: key}, expiry: {$gt: new Date()}}).select('_id').lean())
 		.then(doc => {
 			var exists = !!doc;
 			debug('Check key exists', key, '?', exists);
