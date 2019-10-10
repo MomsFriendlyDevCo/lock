@@ -78,4 +78,19 @@ describe('@momsfriendlydevco/lock', ()=> {
 			.then(doc => expect(_.omit(doc, ['created', 'expiry', 'key'])).to.be.deep.equal({...key, ...data1, qclark: 'Qklark!'}))
 	});
 
+	it('should not exist when expired', function() {
+		var key = 'expires';
+		this.timeout(2 * 1000);
+		return lock.set('expiry', 100).create(key)
+			.then(()=> lock.exists(key))
+			.then(res => expect(res).to.be.true)
+			.then(() => {
+				return new Promise((resolve, reject) => {
+					setTimeout(resolve, 200);
+				});
+			})
+			.then(()=> lock.exists(key))
+			.then(res => expect(res).to.be.false);;
+	});
+
 });
