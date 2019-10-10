@@ -90,6 +90,7 @@ var lock = function(options) {
 	* @returns {Promise <boolean>} A promise which will resolve with true/false if the lock was created
 	*/
 	this.create = (key, fields) => Promise.resolve()
+		.then(()=> this.clean()) // We must remove expired records to avoid unique key conflicts
 		.then(()=> this.hash(key))
 		.then(keyHash => { debug('Create lock with key', keyHash); return keyHash })
 		.then(keyHash => this.model.create({
