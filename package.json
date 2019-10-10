@@ -1,6 +1,6 @@
 {
   "name": "@momsfriendlydevco/lock",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Async locking mechanism based on MongoDB",
   "main": "index.js",
   "scripts": {
