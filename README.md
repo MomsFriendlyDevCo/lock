@@ -30,6 +30,7 @@ Default settings.
 | Setting              | Type     | Default                            | Description                                     |
 |----------------------|----------|------------------------------------|-------------------------------------------------|
 | `expiry`             | `number` | 1 hour                             | The time in milliseconds until the lock expires |
+| `ttl`             | `number` | 1 min                             | The time in milliseconds until keep-alive expires |
 | `mongodb`            | `object` | See below                          | MongoDB connection options                      |
 | `mongodb.uri`        | `string` | `"mongodb://localhost/mfdc-cache"` | The MongoDB URI to connect to                   |
 | `mongodb.collection` | `string` | `"locks"`                          | The name of the collection to use               |
@@ -89,6 +90,9 @@ lock.clear()
 ------------
 Remove *all* locks.
 
+lock.alive(item)
+---------------
+Update a locks `ttl` in order to detect disconnected clients
 
 lock.hash(item)
 ---------------
