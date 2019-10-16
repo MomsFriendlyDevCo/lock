@@ -52,6 +52,7 @@ var lock = function(options) {
 		.then(()=> this.schema = new mongoose.Schema({
 			key: {type: mongoose.Schema.Types.String, index: {unique: true}},
 			expiry: {type: mongoose.Schema.Types.Date},
+			ttl: {type: mongoose.Schema.Types.Date},
 			created: {type: mongoose.Schema.Types.Date},
 		}, {strict: false}))
 		.then(()=> this.model = mongoose.model(this.settings.mongodb.collection, this.schema));
@@ -75,7 +76,11 @@ var lock = function(options) {
 	*/
 	this.exists = key => Promise.resolve()
 		.then(()=> key = this.hash(key))
-		.then(()=> this.model.findOne({key: {$eq: key}, expiry: {$gt: new Date()}}).select('_id').lean())
+		.then(()=> this.model.findOne({
+			key: {$eq: key},
+			expiry: {$gt: new Date()},
+			ttl: {$gt: new Date()},
+		}).select('_id').lean())
 		.then(doc => {
 			var exists = !!doc;
 			debug('Check key exists', key, '?', exists);
@@ -97,7 +102,9 @@ var lock = function(options) {
 			key: keyHash,
 			created: new Date(),
 			expiry: new Date(Date.now()+this.settings.expiry),
+			ttl: new Date(Date.now()+this.settings.ttl),
 			...(this.settings.includeKeys && _.isObject(key) ? key : undefined),
+			// FIXME: Place inside a `meta` object so that we can retain any `id` keys
 			...fields,
 		}))
 		.then(()=> {
@@ -114,7 +121,7 @@ var lock = function(options) {
 	* Update the data behind an existing lock
 	* @param {*} key The key to lock, hashed if necessary via hash()
 	* @param {Object} fields Fields to update, can contain `{created, expiry}`
-	* @returns {Promise} A promise which will update with the updated lock
+	* @returns {Promise} A promise which will resolve with the updated lock
 	*/
 	this.update = (key, fields) => Promise.resolve()
 		.then(()=> key = this.hash(key))
@@ -137,8 +144,12 @@ var lock = function(options) {
 	* Remove all expired locks from the database
 	* @returns {Promise} A promise which will resolve when the cleaning has completed
 	*/
+	// FIXME: This is an OR?
 	this.clean = ()=> this.model.deleteMany({
-		expiry: {$lt: new Date()},
+		$or: [
+			{expiry: {$lt: new Date()}},
+			{ttl: {$lt: new Date()}},
+		]
 	});
 
 
@@ -148,6 +159,17 @@ var lock = function(options) {
 	* @returns {Promise} A promise which will resolve when the clearing has completed
 	*/
 	this.clear = ()=> this.model.deleteMany();
+
+
+		/**
+	* Keep-alive
+	* Updates time-to-live so that disconnected clients can be detected
+	* @param {*} key The key to hash
+	* @returns {Promise} A promise which will resolve with the updated lock
+	*/
+	this.alive = key => Promise.resolve()
+	.then(()=> key = this.hash(key))
+	.then(()=> this.model.updateOne({key}, {ttl: new Date(Date.now()+this.settings.ttl)}));
 
 
 	/**
@@ -178,6 +200,7 @@ var lock = function(options) {
 
 lock.defaults = {
 	expiry: 1000 * 60 * 60, // 1 hour
+	ttl: 1000 * 60 * 1, // 1 min
 	mongodb: {
 		uri: 'mongodb://localhost/mfdc-cache',
 		collection: 'locks',
