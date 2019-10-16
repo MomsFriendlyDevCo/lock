@@ -6,10 +6,13 @@ Async locking mechanism based on MongoDB.
 var Lock = require('@momsfriendlydevco/lock');
 
 var locker = new Lock();
+var timer;
 
 locker.init()
-	.then(()=> locker.create({Foo: 'Foo!', bar: 123})
+	.then(()=> locker.create({Foo: 'Foo!', bar: 123}))
+	.then(()=> timer = setInterval(locker.alive({Foo: 'Foo!', bar: 123}), 30000))
 	.then(()=> locker.exists({Foo: 'Foo!', bar: 123})) //= true
+	.then(()=> clearInterval(timer))
 	.then(()=> locker.release({Foo: 'Foo!', bar: 123}))
 ```
 

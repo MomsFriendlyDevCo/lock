@@ -76,6 +76,7 @@ var lock = function(options) {
 	*/
 	this.exists = key => Promise.resolve()
 		.then(()=> key = this.hash(key))
+		// TODO: This could more simply call `clean()` first and query by `key`
 		.then(()=> this.model.findOne({
 			key: {$eq: key},
 			expiry: {$gt: new Date()},
