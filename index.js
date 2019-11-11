@@ -104,9 +104,11 @@ var lock = function(options) {
 			created: new Date(),
 			expiry: new Date(Date.now()+this.settings.expiry),
 			ttl: new Date(Date.now()+this.settings.ttl),
-			...(this.settings.includeKeys && _.isObject(key) ? key : undefined),
-			// FIXME: Place inside a `meta` object so that we can retain any `id` keys
 			...fields,
+			// Legacy expansion into main lock object
+			...(this.settings.includeKeys && _.isObject(key) ? key : undefined),
+			// Additional meta key to retain reserved keys like `id`
+			meta: {...(this.settings.includeKeys && _.isObject(key) ? key : undefined)}
 		}))
 		.then(()=> {
 			debug('Key created', key);

@@ -67,15 +67,15 @@ describe('@momsfriendlydevco/lock', ()=> {
 
 	it('should store custom fields and update them', function() {
 		this.timeout(10 * 1000);
-		var key = {quz: 'Quz!', quark: 'Quark!'};
+		var key = {id: 'Reserved!', quz: 'Quz!', quark: 'Quark!'};
 		var data1 = {quomp: 'Qwomp!', qclark: 'Qlark!'};
 
 		return lock.create(key, data1)
 			.then(()=> lock.get(key))
-			.then(doc => expect(_.omit(doc, ['created', 'expiry', 'key'])).to.be.deep.equal({...key, ...data1}))
+			.then(doc => expect(_.omit(doc, ['id', 'created', 'expiry', 'ttl', 'key'])).to.be.deep.equal({..._.omit(key, ['id']), meta: {...key}, ...data1}))
 			.then(()=> lock.update(key, {qclark: 'Qklark!'}))
 			.then(()=> lock.get(key))
-			.then(doc => expect(_.omit(doc, ['created', 'expiry', 'key'])).to.be.deep.equal({...key, ...data1, qclark: 'Qklark!'}))
+			.then(doc => expect(_.omit(doc, ['id', 'created', 'expiry', 'ttl', 'key'])).to.be.deep.equal({..._.omit(key, ['id']), meta: {...key}, ...data1, qclark: 'Qklark!'}))
 	});
 
 	it('should not exist when expired', function() {
