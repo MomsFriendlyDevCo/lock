@@ -48,7 +48,7 @@ var lock = function(options) {
 		// }}}
 		.then(()=> mongoose.set('useFindAndModify', false))
 		.then(()=> mongoose.set('useCreateIndex', true))
-		.then(()=> mongoose.connect(this.settings.mongodb.uri, this.settings.mongodb.options))
+		.then(()=> mongoose.createConnection(this.settings.mongodb.uri, this.settings.mongodb.options))
 		.then(()=> this.schema = new mongoose.Schema({
 			key: {type: mongoose.Schema.Types.String, index: {unique: true}},
 			expiry: {type: mongoose.Schema.Types.Date},
