@@ -209,6 +209,7 @@ lock.defaults = {
 		collection: 'locks',
 		options: {
 			useNewUrlParser: true,
+			useUnifiedTopology: true,
 		},
 	},
 	omitFields: ['_id', '__v'],
