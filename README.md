@@ -93,9 +93,11 @@ lock.clear()
 ------------
 Remove *all* locks.
 
+
 lock.alive(item)
 ---------------
 Update a locks `ttl` in order to detect disconnected clients
+
 
 lock.hash(item)
 ---------------
