@@ -65,7 +65,7 @@ var lock = function(options) {
 	*/
 	this.get = key => Promise.resolve()
 		.then(()=> key = this.hash(key))
-		.then(()=> this.model.findOne({key}).lean())
+		.then(keyHash => this.model.findOne({key: keyHash}).lean())
 		.then(doc => _.omit(doc, this.settings.omitFields))
 
 
@@ -77,8 +77,8 @@ var lock = function(options) {
 	this.exists = key => Promise.resolve()
 		.then(()=> key = this.hash(key))
 		// TODO: This could more simply call `clean()` first and query by `key`
-		.then(()=> this.model.findOne({
-			key: {$eq: key},
+		.then(keyHash => this.model.findOne({
+			key: {$eq: keyHash},
 			expiry: {$gt: new Date()},
 			ttl: {$gt: new Date()},
 		}).select('_id').lean())
@@ -164,15 +164,15 @@ var lock = function(options) {
 	this.clear = ()=> this.model.deleteMany();
 
 
-		/**
+	/**
 	* Keep-alive
 	* Updates time-to-live so that disconnected clients can be detected
 	* @param {*} key The key to hash
 	* @returns {Promise} A promise which will resolve with the updated lock
 	*/
 	this.alive = key => Promise.resolve()
-	.then(()=> key = this.hash(key))
-	.then(()=> this.model.updateOne({key}, {ttl: new Date(Date.now()+this.settings.ttl)}));
+		.then(()=> key = this.hash(key))
+		.then(()=> this.model.updateOne({key}, {ttl: new Date(Date.now()+this.settings.ttl)}));
 
 
 	/**
