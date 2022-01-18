@@ -55,6 +55,10 @@ var lock = function(options) {
 			ttl: {type: mongoose.Schema.Types.Date},
 			created: {type: mongoose.Schema.Types.Date},
 		}, {strict: false}))
+		// FIXME: Test exists before creating?
+		// _.has(mongoose.models, this.settings.mongodb.collection)
+		//	? mongoose.models[this.settings.mongodb.collection]
+		//	: mongoose.model(this.settings.mongodb.collection, this.schema);
 		.then(()=> this.model = mongoose.model(this.settings.mongodb.collection, this.schema))
 		.finally(() => debug('Connected'));
 
