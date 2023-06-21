@@ -48,9 +48,6 @@ var lock = function(options) {
 				});
 		})
 		// }}}
-		.then(()=> mongoose.set('useFindAndModify', false))
-		.then(()=> mongoose.set('useCreateIndex', true))
-		// FIXME: Setting which enables the use of openUri to avoid connection pool issues?
 		.then(()=> mongoose.connect(this.settings.mongodb.uri, this.settings.mongodb.options))
 		.then(()=> this.schema = new mongoose.Schema({
 			key: {type: mongoose.Schema.Types.String, index: {unique: true}},
