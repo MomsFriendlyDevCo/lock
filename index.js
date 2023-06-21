@@ -38,6 +38,7 @@ var lock = function(options) {
 	* @returns {Promise} A promise which will resolve when complete
 	*/
 	this.init = settings => Promise.resolve()
+		.then(() => debug('Creating Lock instance'))
 		.then(()=> this.set(settings))
 		// Sanity checks {{{
 		.then(()=> {
@@ -49,6 +50,7 @@ var lock = function(options) {
 		// }}}
 		.then(()=> mongoose.set('useFindAndModify', false))
 		.then(()=> mongoose.set('useCreateIndex', true))
+		// FIXME: Setting which enables the use of openUri to avoid connection pool issues?
 		.then(()=> mongoose.connect(this.settings.mongodb.uri, this.settings.mongodb.options))
 		.then(()=> this.schema = new mongoose.Schema({
 			key: {type: mongoose.Schema.Types.String, index: {unique: true}},
@@ -56,7 +58,8 @@ var lock = function(options) {
 			ttl: {type: mongoose.Schema.Types.Date},
 			created: {type: mongoose.Schema.Types.Date},
 		}, {strict: false}))
-		.then(()=> this.model = mongoose.model(this.settings.mongodb.collection, this.schema));
+		.then(()=> this.model = mongoose.model(this.settings.mongodb.collection, this.schema))
+		.finally(() => debug('Connected'));
 
 
 	/**
@@ -77,7 +80,6 @@ var lock = function(options) {
 	*/
 	this.exists = key => Promise.resolve()
 		.then(()=> key = this.hash(key))
-		// TODO: This could more simply call `clean()` first and query by `key`
 		.then(keyHash => this.model.findOne({
 			key: {$eq: keyHash},
 			expiry: {$gt: new Date()},
@@ -165,7 +167,6 @@ var lock = function(options) {
 	* Remove all expired locks from the database
 	* @returns {Promise} A promise which will resolve when the cleaning has completed
 	*/
-	// FIXME: This is an OR?
 	this.clean = ()=> this.model.deleteMany({
 		$or: [
 			{expiry: {$lt: new Date()}},
