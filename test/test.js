@@ -89,4 +89,16 @@ describe('@momsfriendlydevco/lock', ()=> {
 			.then(res => expect(res).to.be.false);;
 	});
 
+	it('should spin-lock', async function() {
+		this.timeout(10 * 1000);
+		var key = {foo: 1, bar: 2};
+
+		// Allocate initial lock + expiry after 1 second
+		await lock.create(key, '1s');
+
+		return lock.spin(key, { // Default rules are to retry 5 times with 250ms between each
+			onLocked: (attempt, max, settings) => mlog.log(`Try unlocking "${settings.key}" [${attempt}/${max}]`),
+		})
+	});
+
 });

@@ -175,6 +175,62 @@ var lock = function(options) {
 
 
 	/**
+	* Repeatedly checks if a key exists a given number of times (with configurable retires / backoff)
+	* If the key is eventually available, it is created otherwise this function throws
+	* @param {*} key The key to check + allocate, if a non-string this is run via hash() first
+	* @param {Object} [options] Additional options to mutate behaviour, other options are passed to `create()`
+	* @param {Number} [options.retries=5] Maximum number of retries to attempt
+	* @param {Number} [options.delay=250] Time in milliseconds to wait for a lock using the default backoff system
+	* @param {Boolean} [options.create=true] If a lock can be allocated, auto allocate it before resuming
+	* @param {Function} [options.backoff] Function to calculate timing backoff, should return the delay to use. Called as `(attempt, max, settings)`. Defaults to simple linear backoff using `delay` + some millisecond fuzz
+	* @param {Function} [options.onLocked] Async function to call each time a lock is detected. Called as `(attempt, max, settings)`
+	* @param {Function} [options.onCreate] Async function to call if allocating a lock is successful. Called as `(attempt, max, settings)`
+	* @param {Function} [options.onExhausted] Async function to call if allocating a lock failed after multiple retries. Called as `(attempt, max, settings)`. Should throw
+	* @returns {Promise} A promise which resolves when the operation has completed with the obtained lock (or null if `onExhausted` didnt throw)
+	*/
+	this.spin = (key, options) => {
+		let settings = {
+			key: this.hash(key),
+			retries: 5,
+			delay: 250,
+			create: true,
+			backoff: (attempt, max, settings) => (attempt * settings.delay) + Math.floor(Math.random() * 100),
+			onLocked: (attempt, max, settings) => console.warn('Unable to allocate lock', settings.key, `${attempt}/${max}`),
+			onCreate: (attempt, max, settings) => {},
+			onExhausted: (attempt, max, settings) => { throw new Error(`Unable to alocate ${settings.key} after ${attempt} attempts`) },
+			...options,
+		};
+
+		return new Promise((resolve, reject) => {
+			let attempt = 0;
+			let tryLock = ()=> this.exists(settings.key)
+				.then(lockExists => {
+					if (lockExists && ++attempt > settings.retries) { // Locked + exceeded number of tries
+						return Promise.resolve(settings.onExhausted(attempt, settings.retries, settings))
+							.then(()=> null)
+							.catch(reject);
+					} else if (lockExists) { // Lock already exists
+						return Promise.resolve(settings.onLocked(attempt, settings.retries, settings))
+							.then(()=> settings.backoff(attempt, settings.retries, settings))
+							.then(delay => new Promise(resolve => {
+								if (!isFinite(delay)) throw new Error('Expected onBackoff to return a delay - didnt get back a finite number');
+								setTimeout(resolve, delay);
+							}))
+							.then(tryLock)
+							.catch(reject)
+					} else { // No lock exits - resolve outer promise
+						return Promise.resolve(settings.onCreate(attempt, settings.retries, settings))
+							.then(()=> settings.create && this.create(settings.key, options))
+							.then(()=> resolve(settings.key))
+							.catch(reject)
+					}
+				});
+			tryLock(); // Kickoff initial lock-check cycle
+		});
+	};
+
+
+	/**
 	* Remove ALL locks from the database
 	* This is only really useful when debugging
 	* @returns {Promise} A promise which will resolve when the clearing has completed

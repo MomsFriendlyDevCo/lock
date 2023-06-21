@@ -30,6 +30,7 @@
     "@momsfriendlydevco/marshal": "^1.1.0",
     "debug": "^4.1.1",
     "lodash": "^4.17.20",
-    "mongoose": "^5.10.4"
+    "mongoose": "^5.10.4",
+    "timestring": "^7.0.0"
   }
 }

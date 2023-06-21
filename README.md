@@ -95,6 +95,24 @@ lock.clear()
 Remove *all* locks.
 
 
+lock.spin(key, options)
+-----------------------
+Returns a Promise which repeatedly checks if a key exists a given number of times (with configurable retires / backoff).
+If the key is eventually available, it is created otherwise this function throws.
+
+Options are:
+
+| Option        | Type       | Default | Description                                                                                                                                                                         |
+|---------------|------------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `retries`     | `Number`   | `5`     | Maximum number of retries to attempt                                                                                                                                                |
+| `delay`       | `Number`   | `250`   | Time in milliseconds to wait for a lock using the default backoff system                                                                                                            |
+| `create`      | `Boolean`  | `true`  | If a lock can be allocated, auto allocate it before resuming                                                                                                                        |
+| `backoff`     | `Function` |         | Function to calculate timing backoff, should return the delay to use. Called as `(attempt, max, settings)`. Defaults to simple linear backoff using `delay` + some millisecond fuzz |
+| `onLocked`    | `Function` |         | Async function to call each time a lock is detected. Called as `(attempt, max, settings)`                                                                                           |
+| `onCreate`    | `Function` |         | Async function to call if allocating a lock is successful. Called as `(attempt, max, settings)`                                                                                     |
+| `onExhausted` | `Function` |         | Async function to call if allocating a lock failed after multiple retries. Called as `(attempt, max, settings)`. Should throw                                                       |
+
+
 lock.alive(item)
 ---------------
 Update a locks `ttl` in order to detect disconnected clients
