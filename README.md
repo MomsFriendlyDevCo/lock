@@ -52,9 +52,10 @@ lock.init(settings)
 Check all settings and connect to the database.
 
 
-lock.create(key, additionalFields)
-----------------------------------
-Attempt to create a lock, returning a `Promise <boolean>` for success.
+lock.create(key, expiry, additionalFields)
+------------------------------------------
+Attempt to create a lock, returning a `Promise<Boolean>` for success.
+Expiry is optional and can be a [timestring](https://github.com/mike182uk/timestring), Date or number of milliseconds.
 Key is run via `lock.hash()` if it is not already a string.
 
 

@@ -3,6 +3,7 @@ var crypto = require('crypto');
 var debug = require('debug')('lock');
 var marshal = require('@momsfriendlydevco/marshal');
 var mongoose = require('mongoose');
+var timestring = require('timestring');
 
 var lock = function(options) {
 	this.settings = {
@@ -37,7 +38,6 @@ var lock = function(options) {
 	* @returns {Promise} A promise which will resolve when complete
 	*/
 	this.init = settings => Promise.resolve()
-		.then(() => debug('Creating Lock instance'))
 		.then(()=> this.set(settings))
 		// Sanity checks {{{
 		.then(()=> {
@@ -49,7 +49,6 @@ var lock = function(options) {
 		// }}}
 		.then(()=> mongoose.set('useFindAndModify', false))
 		.then(()=> mongoose.set('useCreateIndex', true))
-		// FIXME: Setting which enables the use of openUri to avoid connection pool issues?
 		.then(()=> mongoose.connect(this.settings.mongodb.uri, this.settings.mongodb.options))
 		.then(()=> this.schema = new mongoose.Schema({
 			key: {type: mongoose.Schema.Types.String, index: {unique: true}},
@@ -57,12 +56,7 @@ var lock = function(options) {
 			ttl: {type: mongoose.Schema.Types.Date},
 			created: {type: mongoose.Schema.Types.Date},
 		}, {strict: false}))
-		// FIXME: Test exists before creating?
-		// _.has(mongoose.models, this.settings.mongodb.collection)
-		//	? mongoose.models[this.settings.mongodb.collection]
-		//	: mongoose.model(this.settings.mongodb.collection, this.schema);
-		.then(()=> this.model = mongoose.model(this.settings.mongodb.collection, this.schema))
-		.finally(() => debug('Connected'));
+		.then(()=> this.model = mongoose.model(this.settings.mongodb.collection, this.schema));
 
 
 	/**
@@ -99,19 +93,36 @@ var lock = function(options) {
 	/**
 	* Attempt to create a lock, returning a boolean for success
 	* @param {*} key The key to lock, hashed if necessary via hash()
+	* @param {Date|String|Number} [expiry] Optional lock expiry timestring / interval or date
 	* @param {Object} fields Additional fields to pass, can contain `{created, expiry}`
+	* @param {Date|String|Number} [options.expiry] Optional lock expiry timestring / interval or date
+	* @param {Date} [options.created] Overriding lock creation date if not now
 	* @returns {Promise <boolean>} A promise which will resolve with true/false if the lock was created
 	*/
-	this.create = (key, fields) => Promise.resolve()
+	this.create = (key, expiry, fields) => Promise.resolve()
+		.then(()=> { // Argument mangling
+			if (typeof expiry == 'object' && !(expiry instanceof Date)) { // Assume we're being called as (key, fields)
+				[key, fields] = [key, expiry];
+			} else if (typeof expiry == 'string' || isFinite(expiry) || expiry instanceof Date) { // Parse expiry
+				[key, fields] = [key, {
+					expiry,
+					...fields,
+				}];
+			}
+		})
 		.then(()=> this.clean()) // We must remove expired records to avoid unique key conflicts
 		.then(()=> this.hash(key))
 		.then(keyHash => { debug('Create lock with key', keyHash); return keyHash })
 		.then(keyHash => this.model.create({
 			key: keyHash,
 			created: new Date(),
-			expiry: new Date(Date.now()+this.settings.expiry),
-			ttl: new Date(Date.now()+this.settings.ttl),
 			...fields,
+			expiry:
+				isFinite(expiry) ? new Date(Date.now() + expiry) // Given a number offset
+				: typeof expiry == 'string' ? new Date(Date.now() + timestring(expiry, 'ms')) // Parse timestring
+				: expiry instanceof Date ? expiry // Given a real date
+				: new Date(Date.now()+this.settings.expiry), // Use default
+			ttl: new Date(Date.now()+this.settings.ttl),
 			// Legacy expansion into main lock object
 			...(this.settings.includeKeys && _.isObject(key) ? key : undefined),
 			// Additional meta key to retain reserved keys like `id`
